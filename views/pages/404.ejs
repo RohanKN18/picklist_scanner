@@ -1,0 +1,14 @@
+<div class="status-wrapper">
+  <div class="status-code">404</div>
+  <div class="status-icon">⬡</div>
+  <h1 class="status-title">Page not found</h1>
+  <p class="status-msg">The page you're looking for doesn't exist or was moved.</p>
+  <div class="status-actions">
+    <a href="/" class="btn btn--primary">← Go Home</a>
+    <% if (locals.currentUser) { %>
+      <a href="/upload" class="btn btn--outline">Upload Picklist</a>
+    <% } else { %>
+      <a href="/auth/login" class="btn btn--outline">Sign In</a>
+    <% } %>
+  </div>
+</div>

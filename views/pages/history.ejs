@@ -1,0 +1,187 @@
+<div class="page-wrapper page-wrapper--wide">
+
+  <div class="page-header">
+    <a href="/" class="back-link">← Home</a>
+    <div class="page-header__title">Scan History</div>
+    <div class="page-header__sub">
+      <%= total %> picklist<%= total !== 1 ? 's' : '' %> · auto-cleanup removes inactive lists older than <%= parseInt(process.env.PICKLIST_RETENTION_DAYS) || 30 %> days
+    </div>
+  </div>
+
+  <!-- FLASH MESSAGES -->
+  <% if (success) { %>
+    <div class="alert alert--success" style="margin-bottom:16px;">
+      <span class="alert__icon">✓</span>
+      <span><%= success %></span>
+    </div>
+  <% } %>
+  <% if (error) { %>
+    <div class="alert alert--error" style="margin-bottom:16px;">
+      <span class="alert__icon">!</span>
+      <span><%= error %></span>
+    </div>
+  <% } %>
+
+  <!-- TOP ACTIONS -->
+  <div class="history-actions-bar">
+
+    <a href="/upload" class="btn btn--primary btn--sm">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      New Upload
+    </a>
+
+    <div class="history-actions-bar__right">
+
+      <!-- Manual cleanup form -->
+      <form action="/history/cleanup" method="POST" class="history-cleanup-form"
+        onsubmit="return confirm('Delete all inactive picklists older than the specified days?')">
+        <span class="history-cleanup-form__label">Cleanup older than</span>
+        <input
+          type="number"
+          name="days"
+          value="<%= parseInt(process.env.PICKLIST_RETENTION_DAYS) || 30 %>"
+          min="1"
+          max="365"
+          class="field-input history-cleanup-form__input"
+        />
+        <span class="history-cleanup-form__label">days</span>
+        <button type="submit" class="btn btn--outline btn--sm">Run Cleanup</button>
+      </form>
+
+      <!-- Delete all inactive -->
+      <% if (total > 0) { %>
+        <form action="/history/delete-all" method="POST"
+          onsubmit="return confirm('Delete ALL inactive picklists? This cannot be undone.')">
+          <button type="submit" class="btn btn--danger btn--sm">Delete All Inactive</button>
+        </form>
+      <% } %>
+
+    </div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <% if (picklists.length === 0) { %>
+    <div class="history-empty">
+      <div class="history-empty__icon">📋</div>
+      <div class="history-empty__title">No picklists yet</div>
+      <div class="history-empty__sub">Upload an Excel file to create your first picklist.</div>
+      <a href="/upload" class="btn btn--primary" style="margin-top:16px;">Upload Picklist</a>
+    </div>
+
+  <% } else { %>
+
+    <!-- PICKLIST CARDS -->
+    <div class="history-grid">
+      <% picklists.forEach(pl => { %>
+        <%
+          const isActive  = pl._id.toString() === activeId;
+          const pct       = pl.stats.progressPct;
+          const statusCls = pct === 100 ? 'done' : pct > 0 ? 'partial' : 'pending';
+          const date      = new Date(pl.updatedAt).toLocaleString('en-IN', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+          });
+        %>
+        <div class="history-card <%= isActive ? 'history-card--active' : '' %>">
+
+          <!-- Card Header -->
+          <div class="history-card__header">
+            <div class="history-card__file">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <%= pl.fileName || 'Unknown file' %>
+            </div>
+            <div class="history-card__badges">
+              <% if (isActive) { %>
+                <span class="badge badge--done">Active</span>
+              <% } %>
+              <% if (!pl.isActive && !isActive) { %>
+                <span class="badge badge--pending">Inactive</span>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="history-card__progress">
+            <div class="history-card__progress-track">
+              <div class="history-card__progress-fill history-card__progress-fill--<%= statusCls %>"
+                style="width:<%= pct %>%"></div>
+            </div>
+            <span class="history-card__pct"><%= pct %>%</span>
+          </div>
+
+          <!-- Stats Row -->
+          <div class="history-card__stats">
+            <div class="history-stat">
+              <span class="history-stat__label">Items</span>
+              <span class="history-stat__val"><%= pl.stats.itemCount %></span>
+            </div>
+            <div class="history-stat">
+              <span class="history-stat__label">Expected</span>
+              <span class="history-stat__val"><%= pl.stats.totalExpected %></span>
+            </div>
+            <div class="history-stat">
+              <span class="history-stat__label">Scanned</span>
+              <span class="history-stat__val history-stat__val--done"><%= pl.stats.totalScanned %></span>
+            </div>
+            <div class="history-stat">
+              <span class="history-stat__label">Remaining</span>
+              <span class="history-stat__val"><%= pl.stats.totalRemaining %></span>
+            </div>
+            <% if (pl.stats.alertCount > 0) { %>
+              <div class="history-stat">
+                <span class="history-stat__label">Alerts</span>
+                <span class="history-stat__val history-stat__val--alert"><%= pl.stats.alertCount %></span>
+              </div>
+            <% } %>
+          </div>
+
+          <!-- Date -->
+          <div class="history-card__date">
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Last updated <%= date %>
+          </div>
+
+          <!-- Actions -->
+          <div class="history-card__actions">
+            <% if (isActive) { %>
+              <a href="/scan" class="btn btn--primary btn--sm" style="flex:1; justify-content:center;">
+                Continue Scanning
+              </a>
+            <% } else { %>
+              <form action="/history/resume/<%= pl._id %>" method="POST" style="flex:1;">
+                <button type="submit" class="btn btn--outline btn--sm" style="width:100%;">
+                  ↩ Resume
+                </button>
+              </form>
+            <% } %>
+
+            <a href="/history/export/<%= pl._id %>" class="btn btn--outline btn--sm" title="Export this picklist">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </a>
+
+            <form action="/history/delete/<%= pl._id %>" method="POST"
+              onsubmit="return confirm('Delete this picklist permanently?')">
+              <button type="submit" class="btn-icon-delete" title="Delete">✕</button>
+            </form>
+          </div>
+
+        </div>
+      <% }) %>
+    </div>
+
+    <!-- PAGINATION -->
+    <% if (totalPages > 1) { %>
+      <div class="codemap-pagination" style="margin-top:8px;">
+        <% if (page > 1) { %>
+          <a href="/history?page=<%= page - 1 %>" class="btn btn--outline btn--sm">← Prev</a>
+        <% } %>
+        <span class="codemap-pagination__info">Page <%= page %> of <%= totalPages %></span>
+        <% if (page < totalPages) { %>
+          <a href="/history?page=<%= page + 1 %>" class="btn btn--outline btn--sm">Next →</a>
+        <% } %>
+      </div>
+    <% } %>
+
+  <% } %>
+
+</div>

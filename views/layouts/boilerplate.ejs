@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title ? title + ' — Picklist Scanner' : 'Picklist Scanner' %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <%
+    /* Pages that render their own full-screen layout — hide the global nav */
+    const noNavPages = ['/', '/auth/login', '/auth/register'];
+    const isFullscreen = locals.currentUser == null
+      || ['home', 'login', 'register'].some(p => (title || '').toLowerCase().includes(p));
+  %>
+
+  <% if (locals.currentUser && !isFullscreen) { %>
+    <nav class="global-nav">
+      <div class="global-nav__inner">
+
+        <a href="/" class="nav-brand">
+          <span class="nav-logo">PS</span>
+          <span class="nav-brand-name">Picklist Scanner</span>
+        </a>
+
+        <div class="nav-links">
+          <a href="/upload"  class="nav-link">Upload</a>
+          <a href="/scan"    class="nav-link">Dashboard</a>
+          <a href="/history" class="nav-link">History</a>
+          <a href="/codemap" class="nav-link">Code Maps</a>
+          <a href="/demo"    class="nav-link">Demo</a>
+        </div>
+
+        <div class="nav-user">
+          <div class="nav-avatar">
+            <%= (currentUser.displayName || currentUser.username).charAt(0).toUpperCase() %>
+          </div>
+          <span class="nav-username">
+            <%= currentUser.displayName || currentUser.username %>
+          </span>
+          <form action="/auth/logout" method="POST" style="display:inline;">
+            <button class="nav-logout" type="submit">Sign Out</button>
+          </form>
+        </div>
+
+      </div>
+    </nav>
+  <% } %>
+
+  <%- body %>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<div class="auth-wrapper">
+  <div class="auth-card">
+
+    <div class="auth-brand">
+      <div class="auth-logo">PS</div>
+      <div class="auth-brand-name">Picklist Scanner</div>
+    </div>
+
+    <h1 class="auth-title">Welcome back</h1>
+    <p class="auth-sub">Sign in to your account to continue</p>
+
+    <% if (error) { %>
+      <div class="auth-error">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <%= error %>
+      </div>
+    <% } %>
+
+    <form action="/auth/login" method="POST" class="auth-form">
+      <div class="field-group">
+        <label class="field-label" for="username">Username</label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          class="field-input"
+          placeholder="your_username"
+          autocomplete="username"
+          autofocus
+          required
+        />
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="password">Password</label>
+        <div class="input-wrap">
+          <input
+            id="password"
+            name="password"
+            type="password"
+            class="field-input"
+            placeholder="••••••••"
+            autocomplete="current-password"
+            required
+          />
+          <button type="button" class="toggle-pw" onclick="togglePw('password', this)" tabindex="-1">
+            <svg class="eye-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn--auth">Sign In →</button>
+    </form>
+
+    <div class="auth-footer">
+      Don't have an account?
+      <a href="/auth/register" class="auth-link">Create one</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function togglePw(id, btn) {
+  const input = document.getElementById(id);
+  input.type = input.type === 'password' ? 'text' : 'password';
+  btn.classList.toggle('active');
+}
+</script>

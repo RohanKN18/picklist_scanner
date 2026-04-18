@@ -1,0 +1,103 @@
+<div class="page-wrapper">
+  <div class="page-header">
+    <a href="/" class="back-link">← Back</a>
+    <div class="page-header__title">Upload Picklist</div>
+    <div class="page-header__sub">Upload an Excel file to begin scanning</div>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert--error" style="margin-bottom:16px;">
+      <span class="alert__icon">!</span>
+      <span><%= error %></span>
+    </div>
+  <% } %>
+
+  <div class="upload-card">
+    <form action="/upload" method="POST" enctype="multipart/form-data" id="upload-form">
+
+      <div class="upload-zone" id="drop-zone">
+        <div class="upload-zone__icon">
+          <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <p class="upload-zone__title">Drop Excel file here</p>
+        <p class="upload-zone__sub">or click to browse &mdash; .xlsx and .xls supported, max 10MB</p>
+        <input type="file" name="file" id="file-input" accept=".xlsx,.xls" required />
+      </div>
+
+      <div id="file-preview" class="file-preview" style="display:none;">
+        <span class="file-preview__icon">📊</span>
+        <span id="file-name" class="file-preview__name"></span>
+        <button type="button" class="file-preview__remove" onclick="clearFile()">×</button>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn--primary" type="submit" id="upload-btn" disabled>
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Upload & Start Scanning
+        </button>
+
+        <a href="/colmap" class="btn btn--outline" id="change-cols-btn">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Change Column Names
+        </a>
+
+        <a href="/demo" class="btn btn--outline">Load Demo</a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+  const dropZone   = document.getElementById('drop-zone');
+  const fileInput  = document.getElementById('file-input');
+  const filePreview= document.getElementById('file-preview');
+  const fileName   = document.getElementById('file-name');
+  const uploadBtn  = document.getElementById('upload-btn');
+
+  dropZone.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) showFile(fileInput.files[0]);
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files;
+      showFile(file);
+    }
+  });
+
+  function showFile(file) {
+    fileName.textContent = file.name;
+    filePreview.style.display = 'flex';
+    dropZone.style.display = 'none';
+    uploadBtn.disabled = false;
+  }
+
+  function clearFile() {
+    fileInput.value = '';
+    filePreview.style.display = 'none';
+    dropZone.style.display = 'flex';
+    uploadBtn.disabled = true;
+  }
+
+  document.getElementById('upload-form').addEventListener('submit', () => {
+    uploadBtn.innerHTML = 'Processing…';
+    uploadBtn.disabled = true;
+  });
+</script>

@@ -1,0 +1,85 @@
+<div class="page-wrapper">
+  <div class="page-header">
+    <a href="/upload" class="back-link">← Back to Upload</a>
+    <div class="page-header__title">Map Columns</div>
+    <div class="page-header__sub">Tell us which columns contain the barcode and quantity. This choice is saved for future uploads.</div>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert--error" style="margin-bottom:16px;">
+      <span class="alert__icon">!</span>
+      <span><%= error %></span>
+    </div>
+  <% } %>
+
+  <div class="colmap-card">
+    <form action="/scan/start" method="POST">
+
+      <% const saved = typeof savedMap !== 'undefined' ? savedMap : {}; %>
+
+      <div class="colmap-grid">
+        <div class="field-group">
+          <label class="field-label" for="barcode">
+            Barcode Column
+            <% if (saved.barcode) { %><span class="saved-tag">saved</span><% } %>
+          </label>
+          <div class="field-hint">Column containing item codes or barcodes</div>
+          <select name="barcode" id="barcode" class="field-select" required>
+            <option value="">— Select column —</option>
+            <% columns.forEach(col => { %>
+              <option value="<%= col %>" <%= saved.barcode === col ? 'selected' : '' %>><%= col %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="quantity">
+            Quantity Column
+            <% if (saved.quantity) { %><span class="saved-tag">saved</span><% } %>
+          </label>
+          <div class="field-hint">Column containing expected quantities</div>
+          <select name="quantity" id="quantity" class="field-select" required>
+            <option value="">— Select column —</option>
+            <% columns.forEach(col => { %>
+              <option value="<%= col %>" <%= saved.quantity === col ? 'selected' : '' %>><%= col %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+
+      <% if (typeof previewRows !== 'undefined' && previewRows.length > 0) { %>
+        <div class="preview-section">
+          <div class="preview-label">File Preview — first 3 rows</div>
+          <div class="preview-table-wrapper">
+            <table class="preview-table">
+              <thead>
+                <tr>
+                  <% columns.forEach(col => { %>
+                    <th><%= col %></th>
+                  <% }) %>
+                </tr>
+              </thead>
+              <tbody>
+                <% previewRows.forEach(row => { %>
+                  <tr>
+                    <% columns.forEach(col => { %>
+                      <td><%= row[col] !== undefined ? row[col] : '' %></td>
+                    <% }) %>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% } %>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary">
+          Start Scanning →
+        </button>
+        <a href="/upload" class="btn btn--outline">← Back</a>
+      </div>
+
+    </form>
+  </div>
+</div>

@@ -1,0 +1,10 @@
+<div class="status-wrapper">
+  <div class="status-code status-code--red">500</div>
+  <div class="status-icon">⚠</div>
+  <h1 class="status-title">Something went wrong</h1>
+  <p class="status-msg"><%= message || "An unexpected error occurred on the server." %></p>
+  <div class="status-actions">
+    <a href="/" class="btn btn--primary">← Go Home</a>
+    <button onclick="history.back()" class="btn btn--outline">Go Back</button>
+  </div>
+</div>

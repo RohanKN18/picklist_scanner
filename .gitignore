@@ -1,0 +1,18 @@
+# Environment
+.env
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# Uploads (optional - temp files)
+uploads/

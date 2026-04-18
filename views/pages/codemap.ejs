@@ -1,0 +1,191 @@
+<div class="page-wrapper page-wrapper--wide">
+
+  <div class="page-header">
+    <a href="/" class="back-link">← Home</a>
+    <div class="page-header__title">Code Mappings</div>
+    <div class="page-header__sub">
+      Shared by all users · <%= total %> mapping<%= total !== 1 ? 's' : '' %> total
+    </div>
+  </div>
+
+  <!-- FLASH MESSAGES -->
+  <% if (success) { %>
+    <div class="alert alert--success" style="margin-bottom:16px;">
+      <span class="alert__icon">✓</span>
+      <span><%= success %></span>
+    </div>
+  <% } %>
+  <% if (error) { %>
+    <div class="alert alert--error" style="margin-bottom:16px;">
+      <span class="alert__icon">!</span>
+      <span><%= error %></span>
+    </div>
+  <% } %>
+
+  <div class="codemap-layout">
+
+    <!-- LEFT: ADD FORM -->
+    <div class="codemap-sidebar">
+      <div class="codemap-add-card">
+        <div class="codemap-add-card__title">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Add New Mapping
+        </div>
+        <p class="codemap-add-card__sub">
+          Visible to all users immediately. If the scanned code already exists, it will be updated.
+        </p>
+
+        <form action="/codemap/add" method="POST" class="codemap-add-form">
+          <div class="field-group">
+            <label class="field-label">Scanned Code <span class="required">*</span></label>
+            <div class="field-hint">What the scanner emits (e.g. KIT020666)</div>
+            <input
+              name="scannedCode"
+              type="text"
+              class="field-input field-input--mono"
+              placeholder="KIT020666"
+              autocomplete="off"
+              required
+            />
+          </div>
+
+          <div class="codemap-arrow">↓</div>
+
+          <div class="field-group">
+            <label class="field-label">Real Code <span class="required">*</span></label>
+            <div class="field-hint">The actual product code to use</div>
+            <input
+              name="realCode"
+              type="text"
+              class="field-input field-input--mono"
+              placeholder="BCELZ24PK00001"
+              autocomplete="off"
+              required
+            />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Note <span class="optional">(optional)</span></label>
+            <input
+              name="note"
+              type="text"
+              class="field-input"
+              placeholder="e.g. Kit bundle mapping"
+            />
+          </div>
+
+          <button type="submit" class="btn btn--primary" style="width:100%; margin-top:8px;">
+            Save Mapping
+          </button>
+        </form>
+      </div>
+
+      <!-- FORMAT INFO CARD -->
+      <div class="codemap-info-card">
+        <div class="codemap-info-card__title">Scanner Format</div>
+        <pre class="codemap-info-card__pre">serial|CODE|qty|U</pre>
+        <p class="codemap-info-card__desc">
+          The system extracts <strong>field[1]</strong> as the code and <strong>field[2]</strong> as the quantity, then looks up the code in this table.
+        </p>
+        <div class="codemap-info-card__example">
+          <div class="codemap-info-card__example-row">
+            <span class="badge badge--pending">IN</span>
+            <code>70790905|KIT020666|2|U</code>
+          </div>
+          <div class="codemap-info-card__example-row">
+            <span class="badge badge--done">OUT</span>
+            <code>BCELZ24PK00001 × 2</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: TABLE -->
+    <div class="codemap-main">
+
+      <!-- SEARCH -->
+      <form action="/codemap" method="GET" class="codemap-search-row">
+        <input
+          name="q"
+          type="text"
+          class="field-input codemap-search-input"
+          placeholder="Search by scanned code or real code…"
+          value="<%= q %>"
+          autocomplete="off"
+        />
+        <button type="submit" class="btn btn--primary btn--sm">Search</button>
+        <% if (q) { %>
+          <a href="/codemap" class="btn btn--outline btn--sm">Clear</a>
+        <% } %>
+      </form>
+
+      <!-- TABLE -->
+      <div class="table-container">
+        <table class="picklist-table codemap-table">
+          <thead>
+            <tr>
+              <th class="col-code">Scanned Code</th>
+              <th class="col-code">Real Code</th>
+              <th style="width:12%;">Type</th>
+              <th style="width:14%;">Added By</th>
+              <th style="width:10%;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (mappings.length === 0) { %>
+              <tr>
+                <td colspan="5" class="table-empty">
+                  <%= q ? `No mappings found for "${q}"` : 'No mappings yet — add one on the left.' %>
+                </td>
+              </tr>
+            <% } else { %>
+              <% mappings.forEach(m => { %>
+                <% const isPassthrough = m.scannedCode.toUpperCase() === m.realCode.toUpperCase(); %>
+                <tr class="<%= isPassthrough ? '' : 'row--partial' %>">
+                  <td class="col-code">
+                    <code class="code-cell"><%= m.scannedCode %></code>
+                  </td>
+                  <td class="col-code">
+                    <code class="code-cell code-cell--real"><%= m.realCode %></code>
+                  </td>
+                  <td>
+                    <% if (isPassthrough) { %>
+                      <span class="badge badge--pending">passthrough</span>
+                    <% } else { %>
+                      <span class="badge badge--done">remapped</span>
+                    <% } %>
+                  </td>
+                  <td style="font-size:11px; color:var(--gray-500);">
+                    <%= m.addedBy || '—' %>
+                  </td>
+                  <td>
+                    <form action="/codemap/delete/<%= m._id %>" method="POST"
+                      onsubmit="return confirm('Delete mapping <%= m.scannedCode %>?')">
+                      <button class="btn-icon-delete" type="submit" title="Delete">✕</button>
+                    </form>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION -->
+      <% if (totalPages > 1) { %>
+        <div class="codemap-pagination">
+          <% if (page > 1) { %>
+            <a href="/codemap?q=<%= q %>&page=<%= page - 1 %>" class="btn btn--outline btn--sm">← Prev</a>
+          <% } %>
+          <span class="codemap-pagination__info">
+            Page <%= page %> of <%= totalPages %>
+          </span>
+          <% if (page < totalPages) { %>
+            <a href="/codemap?q=<%= q %>&page=<%= page + 1 %>" class="btn btn--outline btn--sm">Next →</a>
+          <% } %>
+        </div>
+      <% } %>
+
+    </div>
+  </div>
+</div>

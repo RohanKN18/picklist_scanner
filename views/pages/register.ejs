@@ -1,0 +1,142 @@
+<div class="auth-wrapper">
+  <div class="auth-card">
+
+    <div class="auth-brand">
+      <div class="auth-logo">PS</div>
+      <div class="auth-brand-name">Picklist Scanner</div>
+    </div>
+
+    <h1 class="auth-title">Create account</h1>
+    <p class="auth-sub">Set up your workspace in seconds</p>
+
+    <% if (error) { %>
+      <div class="auth-error">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <%= error %>
+      </div>
+    <% } %>
+
+    <form action="/auth/register" method="POST" class="auth-form">
+
+      <div class="field-group">
+        <label class="field-label" for="username">Username <span class="required">*</span></label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          class="field-input"
+          placeholder="warehouse_user"
+          autocomplete="username"
+          autofocus
+          required
+        />
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="displayName">Display Name <span class="optional">(optional)</span></label>
+        <input
+          id="displayName"
+          name="displayName"
+          type="text"
+          class="field-input"
+          placeholder="John Smith"
+        />
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="password">Password <span class="required">*</span></label>
+        <div class="input-wrap">
+          <input
+            id="password"
+            name="password"
+            type="password"
+            class="field-input"
+            placeholder="Min. 6 characters"
+            autocomplete="new-password"
+            required
+            minlength="6"
+          />
+          <button type="button" class="toggle-pw" onclick="togglePw('password', this)" tabindex="-1">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div id="pw-strength" class="pw-strength"></div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="confirmPassword">Confirm Password <span class="required">*</span></label>
+        <div class="input-wrap">
+          <input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            class="field-input"
+            placeholder="Repeat password"
+            autocomplete="new-password"
+            required
+          />
+          <button type="button" class="toggle-pw" onclick="togglePw('confirmPassword', this)" tabindex="-1">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div id="pw-match" class="pw-match"></div>
+      </div>
+
+      <button type="submit" class="btn btn--auth" id="submit-btn">Create Account →</button>
+    </form>
+
+    <div class="auth-footer">
+      Already have an account?
+      <a href="/auth/login" class="auth-link">Sign in</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function togglePw(id, btn) {
+  const input = document.getElementById(id);
+  input.type = input.type === 'password' ? 'text' : 'password';
+  btn.classList.toggle('active');
+}
+
+const pw = document.getElementById('password');
+const confirm = document.getElementById('confirmPassword');
+const strengthEl = document.getElementById('pw-strength');
+const matchEl = document.getElementById('pw-match');
+
+pw.addEventListener('input', () => {
+  const val = pw.value;
+  let strength = 0;
+  let label = '';
+  let cls = '';
+
+  if (val.length >= 6) strength++;
+  if (val.length >= 10) strength++;
+  if (/[A-Z]/.test(val)) strength++;
+  if (/[0-9]/.test(val)) strength++;
+  if (/[^A-Za-z0-9]/.test(val)) strength++;
+
+  if (val.length === 0) { strengthEl.textContent = ''; return; }
+  if (strength <= 1) { label = 'Weak'; cls = 'weak'; }
+  else if (strength <= 3) { label = 'Fair'; cls = 'fair'; }
+  else { label = 'Strong'; cls = 'strong'; }
+
+  strengthEl.textContent = label;
+  strengthEl.className = 'pw-strength pw-strength--' + cls;
+  checkMatch();
+});
+
+confirm.addEventListener('input', checkMatch);
+
+function checkMatch() {
+  if (!confirm.value) { matchEl.textContent = ''; return; }
+  if (pw.value === confirm.value) {
+    matchEl.textContent = '✓ Passwords match';
+    matchEl.className = 'pw-match pw-match--ok';
+  } else {
+    matchEl.textContent = '✗ Passwords do not match';
+    matchEl.className = 'pw-match pw-match--err';
+  }
+}
+</script>

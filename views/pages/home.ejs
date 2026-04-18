@@ -1,0 +1,64 @@
+<div class="home-wrapper">
+  <div class="home-bg-grid"></div>
+
+  <div class="home-card">
+    <div class="auth-brand" style="margin-bottom: 28px;">
+      <div class="auth-logo">PS</div>
+      <div class="auth-brand-name" style="color: rgba(255,255,255,0.7);">Picklist Scanner</div>
+    </div>
+
+    <div class="home-badge">WAREHOUSE SYSTEM v1.0</div>
+    <h1 class="home-title">Scan.<br/>Track.<br/>Export.</h1>
+    <p class="home-desc">
+      Upload an Excel picklist, map your columns, scan barcodes in real-time.
+      Over-scan detection, extra item logging, and one-click Excel export.
+    </p>
+
+    <% if (locals.currentUser) { %>
+
+      <div class="home-user-pill">
+        <span class="home-user-avatar"><%= (currentUser.displayName || currentUser.username).charAt(0).toUpperCase() %></span>
+        <span>Signed in as <strong><%= currentUser.displayName || currentUser.username %></strong></span>
+      </div>
+
+      <div class="home-actions">
+        <a href="/upload" class="btn btn--home-primary">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Upload Picklist
+        </a>
+        <a href="/demo" class="btn btn--home-ghost">Load Demo</a>
+        <form action="/auth/logout" method="POST" style="display:inline;">
+          <button class="btn btn--home-ghost" type="submit">Sign Out</button>
+        </form>
+      </div>
+
+    <% } else { %>
+
+      <div class="home-actions">
+        <a href="/auth/login" class="btn btn--home-primary">Sign In</a>
+        <a href="/auth/register" class="btn btn--home-ghost">Create Account</a>
+      </div>
+
+    <% } %>
+
+    <div class="home-features">
+      <div class="feature">
+        <span class="feature-dot"></span>
+        Real-time barcode scanning
+      </div>
+      <div class="feature">
+        <span class="feature-dot"></span>
+        Over-scan &amp; extra item alerts
+      </div>
+      <div class="feature">
+        <span class="feature-dot"></span>
+        Excel export with color-coded report
+      </div>
+      <div class="feature">
+        <span class="feature-dot"></span>
+        MongoDB-backed — no data loss on refresh
+      </div>
+    </div>
+
+  </div>
+</div>
