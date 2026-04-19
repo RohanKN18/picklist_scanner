@@ -1,15 +1,51 @@
 <div class="scan-wrapper">
 
-  <!-- HEADER -->
-  <div class="scan-header">
-    <div class="scan-header__left">
+  <!-- ═══ TOP INFO BAR ═══ -->
+  <div class="scan-infobar">
+    <div class="scan-infobar__left">
       <div class="scan-logo">PS</div>
-      <div>
-        <div class="scan-header__title">Picklist Scanner</div>
-        <div class="scan-header__file"><%= fileName || 'Picklist' %></div>
+      <div class="scan-infobar__file">
+        <div class="scan-infobar__filename"><%= fileName || 'Picklist' %></div>
+        <div class="scan-infobar__sub">Picklist Scanner</div>
       </div>
     </div>
-    <div class="scan-header__actions">
+
+    <!-- PREVIEW DATA FROM FIRST ROW -->
+    <div class="scan-infobar__preview">
+      <!-- MAJOR FIELDS (barcode + quantity columns) -->
+      <% if (majorBarcode && previewRow[majorBarcode] !== undefined) { %>
+        <div class="preview-field preview-field--major">
+          <span class="preview-field__label"><%= majorBarcode %></span>
+          <span class="preview-field__value"><%= previewRow[majorBarcode] || '—' %></span>
+        </div>
+      <% } %>
+      <% if (majorQuantity && previewRow[majorQuantity] !== undefined) { %>
+        <div class="preview-field preview-field--major">
+          <span class="preview-field__label"><%= majorQuantity %></span>
+          <span class="preview-field__value"><%= previewRow[majorQuantity] || '—' %></span>
+        </div>
+      <% } %>
+
+      <!-- MINOR FIELDS (user-selected additional columns) -->
+      <%
+        const visibleMinors = minorColumns.slice(0, minorCount);
+      %>
+      <% visibleMinors.forEach(col => { %>
+        <% if (previewRow[col] !== undefined) { %>
+          <div class="preview-field preview-field--minor">
+            <span class="preview-field__label"><%= col %></span>
+            <span class="preview-field__value"><%= previewRow[col] || '—' %></span>
+          </div>
+        <% } %>
+      <% }) %>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="scan-infobar__actions">
+      <a href="/colmap" class="btn btn--sm btn--secondary">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Change Columns
+      </a>
       <a href="/picklist/export" class="btn btn--sm btn--outline" target="_blank">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export
@@ -20,7 +56,7 @@
     </div>
   </div>
 
-  <!-- STATS -->
+  <!-- ═══ STATS BAR + CIRCULAR PROGRESS ═══ -->
   <div class="stats-bar">
     <div class="stat-pill">
       <span class="stat-pill__label">Expected</span>
@@ -38,20 +74,38 @@
       <span class="stat-pill__label">Alerts</span>
       <span id="stat-alerts" class="stat-pill__val stat-pill__val--alert"><%= stats.alertCount %></span>
     </div>
+
+    <!-- CIRCULAR PROGRESS -->
+    <div class="stat-pill stat-pill--progress" id="progress-pill">
+      <span class="stat-pill__label">Progress</span>
+      <div class="donut-wrap">
+        <svg class="donut" viewBox="0 0 80 80" width="72" height="72">
+          <!-- Background track -->
+          <circle
+            class="donut-track"
+            cx="40" cy="40" r="30"
+            fill="none"
+            stroke-width="8"
+          />
+          <!-- Filled arc -->
+          <circle
+            id="donut-arc"
+            class="donut-arc"
+            cx="40" cy="40" r="30"
+            fill="none"
+            stroke-width="8"
+            stroke-linecap="round"
+            stroke-dasharray="188.5 188.5"
+            stroke-dashoffset="188.5"
+            transform="rotate(-90 40 40)"
+          />
+        </svg>
+        <span class="donut-label" id="progress-pct"><%= stats.progressPct %>%</span>
+      </div>
+    </div>
   </div>
 
-  <!-- PROGRESS -->
-  <div class="progress-bar-container">
-    <div class="progress-bar-labels">
-      <span>Progress</span>
-      <span id="progress-pct"><%= stats.progressPct %>%</span>
-    </div>
-    <div class="progress-track">
-      <div id="progress-fill" class="progress-fill" style="width: <%= stats.progressPct %>%"></div>
-    </div>
-  </div>
-
-  <!-- SCANNER INPUT + UNSCAN TOGGLE -->
+  <!-- ═══ SCANNER INPUT + UNSCAN TOGGLE ═══ -->
   <div class="scanner-row">
     <div class="scanner-block" id="scanner-block">
       <div class="scanner-indicator" id="scan-indicator"></div>
@@ -65,7 +119,6 @@
       <div class="scanner-status" id="scanner-status">Ready</div>
     </div>
 
-    <!-- UNSCAN TOGGLE -->
     <div class="unscan-toggle" id="unscan-toggle" title="Enable to remove items when scanned">
       <span class="unscan-toggle__label">Unscan Mode</span>
       <button
@@ -114,11 +167,13 @@
 
 <!-- INITIAL DATA -->
 <script>
+  /* eslint-disable */
   window.__INIT__ = {
     picklist: <%- JSON.stringify(picklist) %>,
     extra:    <%- JSON.stringify(extra) %>,
     stats:    <%- JSON.stringify(stats) %>,
   };
+  /* eslint-enable */
 </script>
 
 <script src="/js/scanner.js"></script>

@@ -521,8 +521,9 @@ a { text-decoration: none; color: inherit; }
 /* STATS BAR */
 .stats-bar {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, 1fr) auto;
   gap: 10px;
+  align-items: stretch;
 }
 
 .stat-pill {
@@ -767,6 +768,7 @@ a { text-decoration: none; color: inherit; }
 ═══════════════════════════════════════════ */
 @media (max-width: 640px) {
   .stats-bar { grid-template-columns: repeat(2, 1fr); }
+  .stats-bar .stat-pill--progress { grid-column: 1 / -1; }
   .colmap-grid { grid-template-columns: 1fr; }
   .home-title { font-size: 40px; }
   .home-card { padding: 36px 28px; }
@@ -1878,4 +1880,259 @@ a { text-decoration: none; color: inherit; }
 @media (max-width: 600px) {
   .history-grid { grid-template-columns: 1fr; }
   .history-actions-bar { flex-direction: column; align-items: flex-start; }
+}
+
+/* ══════════════════════════════════════════
+   SCAN INFO BAR  (replaces old scan-header)
+══════════════════════════════════════════ */
+.scan-infobar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: var(--black);
+  border-radius: var(--radius-lg);
+  color: var(--white);
+  flex-wrap: wrap;
+}
+
+.scan-infobar__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.scan-infobar__filename {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--white);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scan-infobar__sub {
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+  font-family: var(--font-mono);
+}
+
+/* PREVIEW FIELDS */
+.scan-infobar__preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+  padding: 0 8px;
+  border-left: 1px solid rgba(255,255,255,0.1);
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.preview-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+}
+
+/* Major field — barcode + quantity */
+.preview-field--major {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.preview-field--major .preview-field__label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.5);
+}
+
+.preview-field--major .preview-field__value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 0.02em;
+}
+
+/* Minor field — additional columns */
+.preview-field--minor {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.preview-field--minor .preview-field__label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.35);
+}
+
+.preview-field--minor .preview-field__value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.6);
+}
+
+.scan-infobar__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.scan-infobar__actions .btn--outline {
+  border-color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.7);
+  background: transparent;
+}
+.scan-infobar__actions .btn--outline:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--white);
+}
+
+/* ══════════════════════════════════════════
+   DONUT / CIRCULAR PROGRESS
+══════════════════════════════════════════ */
+.stat-pill--progress {
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  min-width: 100px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.donut-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.donut { display: block; overflow: visible; }
+
+.donut-track {
+  stroke: var(--gray-100);
+}
+
+.donut-arc {
+  stroke: var(--green);
+  stroke-dasharray: 188.5 188.5;
+  stroke-dashoffset: 188.5;
+  transition: stroke-dashoffset 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.donut-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--gray-900);
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════
+   COLMAP PAGE — MINOR COLUMN SELECTORS
+══════════════════════════════════════════ */
+.colmap-section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gray-600);
+  margin-bottom: 12px;
+}
+
+.colmap-section-label__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.colmap-section-label__dot--major { background: var(--black); }
+.colmap-section-label__dot--minor { background: var(--gray-400); }
+
+.colmap-section-hint {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--gray-400);
+  font-size: 11px;
+}
+
+.colmap-minor-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  margin-bottom: 14px;
+}
+
+.minor-col-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 5px 10px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-full);
+  background: var(--white);
+  transition: all var(--transition);
+  font-size: 12px;
+  color: var(--gray-700);
+  user-select: none;
+}
+
+.minor-col-checkbox:has(input:checked) {
+  border-color: var(--black);
+  background: var(--black);
+  color: var(--white);
+}
+
+.minor-col-checkbox input[type="checkbox"] {
+  display: none;
+}
+
+.minor-col-checkbox__label { font-family: var(--font-mono); font-size: 11px; }
+
+.colmap-minor-count-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.field-select--compact {
+  width: auto;
+  min-width: 70px;
+  padding: 6px 28px 6px 10px;
+  font-size: 12px;
+}
+
+@media (max-width: 680px) {
+  .scan-infobar { flex-direction: column; align-items: flex-start; }
+  .scan-infobar__preview { border: none; padding: 4px 0; }
+  .stat-pill--progress { min-width: unset; }
 }

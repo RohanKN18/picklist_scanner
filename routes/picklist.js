@@ -2,7 +2,7 @@ import express from "express";
 import { upload, deleteFile } from "../middlewares/upload.js";
 import { parseExcel } from "../services/pythonService.js";
 import { generateReport, deleteExport } from "../services/exportService.js";
-import Picklist from "../models/Picklist.js";
+import Picklist from "../models/picklist.js";
 import CodeMap from "../models/CodeMap.js";
 import ScanLog from "../models/ScanLog.js";
 
@@ -81,18 +81,39 @@ router.post("/upload", requireLogin, upload.single("file"), async (req, res) => 
 });
 
 /* ── GET /colmap — "Change Column Names" button links here directly ── */
-router.get("/colmap", requireLogin, (req, res) => {
-  const columns = req.session.columns || [];
+router.get("/colmap", requireLogin, async (req, res) => {
+  let columns = req.session.columns || [];
+  let rawData = req.session.rawData || [];
+  let fileName = req.session.fileName || "Unknown";
 
   if (columns.length === 0) {
-    // No file parsed yet — send back to upload
-    return res.redirect("/upload");
+    // Check if we have a picklist to remap
+    const picklistId = req.session.picklistId;
+    if (picklistId) {
+      const picklist = await Picklist.findOne({
+        _id: picklistId,
+        userId: req.user._id.toString(),
+      });
+      if (picklist && picklist.rawData && picklist.rawData.length > 0) {
+        rawData = picklist.rawData;
+        columns = picklist.allColumns || [];
+        fileName = picklist.fileName;
+        // Restore session data for remapping
+        req.session.rawData = rawData;
+        req.session.columns = columns;
+        req.session.fileName = fileName;
+      } else {
+        return res.redirect("/upload");
+      }
+    } else {
+      return res.redirect("/upload");
+    }
   }
 
   res.render("pages/colmap", {
     title:       "Map Columns",
     columns,
-    previewRows: (req.session.rawData || []).slice(0, 3),
+    previewRows: rawData.slice(0, 3),
     savedMap:    req.user.columnMap || {},
   });
 });
@@ -130,11 +151,16 @@ async function buildAndRedirectToScan(req, res, barcode, quantity) {
   );
 
   const picklist = await Picklist.create({
-    sessionId:  req.session.id,
-    userId:     req.user._id.toString(),
-    fileName:   req.session.fileName || "Unknown",
+    sessionId:    req.session.id,
+    userId:       req.user._id.toString(),
+    fileName:     req.session.fileName || "Unknown",
     items,
-    extraScans: {},
+    extraScans:   {},
+    previewRow:   previewRowObj,
+    allColumns:   req.session.columns || [],
+    minorColumns,
+    minorCount,
+    rawData:      req.session.rawData || [],
   });
 
   req.session.picklistId = picklist._id.toString();
@@ -196,15 +222,25 @@ router.get("/scan", requireLogin, async (req, res) => {
 
     if (!picklist) return res.redirect("/upload");
 
-    const extraObj = Object.fromEntries(picklist.extraScans || new Map());
+    const extraObj = picklist.extraScans || {};
+
+    // Serialize previewRow (Object)
+    const previewRow = picklist.previewRow || {};
 
     res.render("pages/scan", {
-      title:      "Scan Dashboard",
-      picklist:   picklist.items,
-      extra:      extraObj,
-      stats:      picklist.stats,
-      picklistId: picklist._id,
-      fileName:   picklist.fileName,
+      title:        "Scan Dashboard",
+      picklist:     picklist.items,
+      extra:        extraObj,
+      stats:        picklist.stats,
+      picklistId:   picklist._id,
+      fileName:     picklist.fileName,
+      previewRow,
+      allColumns:   picklist.allColumns   || [],
+      minorColumns: picklist.minorColumns || [],
+      minorCount:   picklist.minorCount   || 3,
+      // major columns are always barcode + quantity (from user's saved map)
+      majorBarcode:  req.user?.columnMap?.barcode  || "",
+      majorQuantity: req.user?.columnMap?.quantity || "",
     });
   } catch (err) {
     console.error("Scan page error:", err);
@@ -266,13 +302,13 @@ router.post("/scan/api", requireLogin, async (req, res) => {
       if (item && item.scannedQty > 0) {
         item.scannedQty = Math.max(0, item.scannedQty - parsedQty);
         scanType = "unscanned";
-      } else if (picklist.extraScans.has(resolvedCode)) {
-        const current = picklist.extraScans.get(resolvedCode);
+      } else if (picklist.extraScans[resolvedCode]) {
+        const current = picklist.extraScans[resolvedCode];
         const next    = current - parsedQty;
         if (next <= 0) {
-          picklist.extraScans.delete(resolvedCode);
+          delete picklist.extraScans[resolvedCode];
         } else {
-          picklist.extraScans.set(resolvedCode, next);
+          picklist.extraScans[resolvedCode] = next;
         }
         picklist.markModified("extraScans");
         scanType = "unscanned-extra";
@@ -293,8 +329,8 @@ router.post("/scan/api", requireLogin, async (req, res) => {
           scanType = "complete";
         }
       } else {
-        const current = picklist.extraScans.get(resolvedCode) || 0;
-        picklist.extraScans.set(resolvedCode, current + parsedQty);
+        const current = picklist.extraScans[resolvedCode] || 0;
+        picklist.extraScans[resolvedCode] = current + parsedQty;
         picklist.markModified("extraScans");
         alert    = `❌ Extra item: ${resolvedCode}${isRemapped ? ` [was ${parsedCode}]` : ""} (not in picklist)`;
         scanType = "extra";
@@ -323,7 +359,7 @@ router.post("/scan/api", requireLogin, async (req, res) => {
       });
     }
 
-    const extraObj = Object.fromEntries(picklist.extraScans || new Map());
+    const extraObj = picklist.extraScans || {};
 
     res.json({
       success:      true,
@@ -414,11 +450,12 @@ router.get("/demo", requireLogin, async (req, res) => {
     );
 
     const picklist = await Picklist.create({
-      sessionId: req.session.id,
-      userId:    req.user._id.toString(),
-      fileName:  "demo-picklist.xlsx",
-      items:     demoItems,
+      sessionId:  req.session.id,
+      userId:     req.user._id.toString(),
+      fileName:   "demo-picklist.xlsx",
+      items:      demoItems,
       extraScans: {},
+      rawData:    demoItems.map(item => ({ Code: item.code, Quantity: item.expectedQty })),
     });
 
     req.session.picklistId = picklist._id.toString();

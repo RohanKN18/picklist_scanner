@@ -105,15 +105,30 @@ function renderStats() {
   setText("stat-done",      s.totalScanned   ?? 0);
   setText("stat-remaining", s.totalRemaining ?? 0);
   setText("stat-alerts",    s.alertCount     ?? 0);
-  setText("progress-pct",   (s.progressPct   ?? 0) + "%");
 
-  const fill = EL.progFill();
-  if (fill) fill.style.width = (s.progressPct ?? 0) + "%";
+  const pct = s.progressPct ?? 0;
+  setText("progress-pct", pct + "%");
 
-  // Pulse alerts stat if non-zero
+  // Drive the donut arc
+  // Circle circumference = 2π × r = 2π × 30 ≈ 188.5
+  const CIRCUMFERENCE = 188.5;
+  const arc = $("donut-arc");
+  if (arc) {
+    const offset = CIRCUMFERENCE - (pct / 100) * CIRCUMFERENCE;
+    arc.style.strokeDashoffset = offset;
+
+    // Colour: green when done, amber when partial, gray when zero
+    arc.style.stroke = pct === 100
+      ? "var(--green)"
+      : pct > 0
+        ? "var(--green)"
+        : "var(--gray-300)";
+  }
+
+  // Alert pill highlight
   const alertEl = $("stat-alerts");
   if (alertEl) {
-    alertEl.parentElement.classList.toggle("stat-pill--alert", s.alertCount > 0);
+    alertEl.parentElement.classList.toggle("stat-pill--alert", (s.alertCount ?? 0) > 0);
   }
 }
 
@@ -335,4 +350,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   render();
   Scanner.init();
+
+  // Animate donut in on load
+  const arc = document.getElementById("donut-arc");
+  if (arc) {
+    const pct = State.stats.progressPct ?? 0;
+    const CIRCUMFERENCE = 188.5;
+    // Start from full offset (empty) then animate to target
+    arc.style.transition = "none";
+    arc.style.strokeDashoffset = CIRCUMFERENCE;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        arc.style.transition = "stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)";
+        arc.style.strokeDashoffset = CIRCUMFERENCE - (pct / 100) * CIRCUMFERENCE;
+      });
+    });
+  }
 });

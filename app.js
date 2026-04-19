@@ -10,6 +10,7 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 
 import User from "./models/User.js";
+import Picklist from "./models/picklist.js";
 import picklistRouter from "./routes/picklist.js";
 import authRouter from "./routes/auth.js";
 import codemapRouter from "./routes/codemap.js";

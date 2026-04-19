@@ -1,5 +1,5 @@
 import express from "express";
-import Picklist from "../models/Picklist.js";
+import Picklist from "../models/picklist.js";
 import ScanLog from "../models/ScanLog.js";
 import { cleanupOldPicklists } from "../services/cleanupService.js";
 import { generateReport, deleteExport } from "../services/exportService.js";

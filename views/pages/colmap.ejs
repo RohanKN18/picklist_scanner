@@ -2,7 +2,7 @@
   <div class="page-header">
     <a href="/upload" class="back-link">← Back to Upload</a>
     <div class="page-header__title">Map Columns</div>
-    <div class="page-header__sub">Tell us which columns contain the barcode and quantity. This choice is saved for future uploads.</div>
+    <div class="page-header__sub">Configure which columns to use and how they appear on the scan dashboard.</div>
   </div>
 
   <% if (typeof error !== 'undefined' && error) { %>
@@ -16,11 +16,20 @@
     <form action="/scan/start" method="POST">
 
       <% const saved = typeof savedMap !== 'undefined' ? savedMap : {}; %>
+      <% const savedMinors = saved.minorColumns || []; %>
+      <% const savedMinorCount = saved.minorCount || 3; %>
+
+      <!-- SECTION: MAJOR COLUMNS -->
+      <div class="colmap-section-label">
+        <span class="colmap-section-label__dot colmap-section-label__dot--major"></span>
+        Major Columns
+        <span class="colmap-section-hint">Displayed prominently — bold, highlighted</span>
+      </div>
 
       <div class="colmap-grid">
         <div class="field-group">
           <label class="field-label" for="barcode">
-            Barcode Column
+            Barcode Column <span class="required">*</span>
             <% if (saved.barcode) { %><span class="saved-tag">saved</span><% } %>
           </label>
           <div class="field-hint">Column containing item codes or barcodes</div>
@@ -34,7 +43,7 @@
 
         <div class="field-group">
           <label class="field-label" for="quantity">
-            Quantity Column
+            Quantity Column <span class="required">*</span>
             <% if (saved.quantity) { %><span class="saved-tag">saved</span><% } %>
           </label>
           <div class="field-hint">Column containing expected quantities</div>
@@ -45,6 +54,41 @@
             <% }) %>
           </select>
         </div>
+      </div>
+
+      <!-- SECTION: MINOR COLUMNS -->
+      <div class="colmap-section-label" style="margin-top:20px;">
+        <span class="colmap-section-label__dot colmap-section-label__dot--minor"></span>
+        Minor Columns
+        <span class="colmap-section-hint">Additional fields shown in the info bar — smaller, secondary</span>
+      </div>
+
+      <div class="colmap-minor-grid">
+        <% const otherCols = columns.filter(c => c !== (saved.barcode || '') && c !== (saved.quantity || '')); %>
+        <% otherCols.forEach((col, idx) => { %>
+          <label class="minor-col-checkbox">
+            <input
+              type="checkbox"
+              name="minorColumns"
+              value="<%= col %>"
+              <%= savedMinors.includes(col) ? 'checked' : '' %>
+            />
+            <span class="minor-col-checkbox__label"><%= col %></span>
+          </label>
+        <% }) %>
+        <% if (otherCols.length === 0) { %>
+          <p class="field-hint">No additional columns available.</p>
+        <% } %>
+      </div>
+
+      <div class="colmap-minor-count-row">
+        <label class="field-label" for="minorCount">Display up to</label>
+        <select name="minorCount" id="minorCount" class="field-select field-select--compact">
+          <% [1,2,3,4,5].forEach(n => { %>
+            <option value="<%= n %>" <%= savedMinorCount == n ? 'selected' : '' %>><%= n %></option>
+          <% }) %>
+        </select>
+        <span class="field-hint">minor columns in the scan info bar</span>
       </div>
 
       <% if (typeof previewRows !== 'undefined' && previewRows.length > 0) { %>
@@ -74,9 +118,7 @@
       <% } %>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn--primary">
-          Start Scanning →
-        </button>
+        <button type="submit" class="btn btn--primary">Start Scanning →</button>
         <a href="/upload" class="btn btn--outline">← Back</a>
       </div>
 

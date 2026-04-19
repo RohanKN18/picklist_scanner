@@ -240,7 +240,7 @@ export async function generateReport(picklist) {
   /* ══════════════════════════════════════
      SHEET 3 — EXTRA SCANS
   ══════════════════════════════════════ */
-  if (picklist.extraScans && picklist.extraScans.size > 0) {
+  if (picklist.extraScans && Object.keys(picklist.extraScans).length > 0) {
     const ws3 = wb.addWorksheet("Extra Scans");
     ws3.columns = [
       { header: "Code",          key: "code",     width: 28 },
@@ -251,7 +251,7 @@ export async function generateReport(picklist) {
 
     styleHeader(ws3.getRow(1), HDR_RED);
 
-    for (const [code, qty] of picklist.extraScans) {
+    for (const [code, qty] of Object.entries(picklist.extraScans)) {
       const boxes     = boxCount[code] || 0;
       const originals = (rawScansMap[code] || []).join("\n");
 
