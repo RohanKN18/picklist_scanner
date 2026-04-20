@@ -1,51 +1,100 @@
 import mongoose from "mongoose";
 
-const ItemSchema = new mongoose.Schema({
-  code:        { type: String, required: true },
-  expectedQty: { type: Number, required: true, min: 0 },
-  scannedQty:  { type: Number, default: 0, min: 0 },
-}, { _id: false });
+const PicklistItemSchema = new mongoose.Schema({
+  code: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  expectedQty: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+  scannedQty: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+});
 
-const PicklistSchema = new mongoose.Schema({
-  sessionId:    { type: String, required: true },
-  userId:       { type: String, required: true },
-  fileName:     { type: String, required: true },
-  items:        [ItemSchema],
-  extraScans:   { type: Object, default: {} },
-  previewRow:   { type: Object, default: {} },
-  allColumns:   { type: [String], default: [] },
-  minorColumns: { type: [String], default: [] },
-  minorCount:   { type: Number, default: 3 },
-  rawData:      { type: [Object], default: [] },
-  isActive:     { type: Boolean, default: true },
-}, { timestamps: true });
+// Virtual: remaining quantity
+PicklistItemSchema.virtual("remainingQty").get(function () {
+  return Math.max(0, this.expectedQty - this.scannedQty);
+});
 
-// Virtual for stats
-PicklistSchema.virtual("stats").get(function() {
-  const items = this.items || [];
-  const extraScans = this.extraScans || {};
+// Virtual: status
+PicklistItemSchema.virtual("status").get(function () {
+  if (this.scannedQty === 0) return "pending";
+  if (this.scannedQty < this.expectedQty) return "partial";
+  if (this.scannedQty === this.expectedQty) return "done";
+  return "over";
+});
 
-  const totalExpected = items.reduce((sum, i) => sum + (i.expectedQty || 0), 0);
-  const totalScanned  = items.reduce((sum, i) => sum + (i.scannedQty || 0), 0) + Object.values(extraScans).reduce((sum, v) => sum + v, 0);
-  const totalRemaining = Math.max(0, totalExpected - totalScanned);
+const PicklistSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: String,
+      default: "anonymous",
+      index: true,
+    },
+    sessionId: {
+      type: String,
+      index: true,
+    },
+    fileName: {
+      type: String,
+      default: "Unknown",
+    },
+    items: [PicklistItemSchema],
+    extraScans: {
+      type: Map,
+      of: Number,
+      default: {},
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    // First-row values for major+minor columns (same for all rows in the file)
+    firstRowData: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    // Snapshot of which columns were major/minor at upload time
+    columnConfig: {
+      major: { type: [String], default: [] },
+      minor: { type: [String], default: [] },
+    },
+  },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
 
-  const alertCount = items.filter(i => (i.scannedQty || 0) > i.expectedQty).length;
-
-  const progressPct = totalExpected > 0 ? Math.round((totalScanned / totalExpected) * 100) : 0;
+// Computed stats
+PicklistSchema.virtual("stats").get(function () {
+  const totalExpected = this.items.reduce((s, i) => s + i.expectedQty, 0);
+  const totalScanned = this.items.reduce((s, i) => s + i.scannedQty, 0);
+  const doneItems = this.items.filter((i) => i.scannedQty >= i.expectedQty).length;
+  const overItems = this.items.filter((i) => i.scannedQty > i.expectedQty).length;
+  const extraCount = [...(this.extraScans?.values() || [])].reduce((s, v) => s + v, 0);
+  const alertCount = overItems + (this.extraScans?.size || 0);
+  const pct = totalExpected ? Math.round((totalScanned / totalExpected) * 100) : 0;
 
   return {
     totalExpected,
     totalScanned,
-    totalRemaining,
+    totalRemaining: Math.max(0, totalExpected - totalScanned),
+    doneItems,
+    overItems,
+    extraCount,
     alertCount,
-    progressPct,
+    progressPct: Math.min(100, pct),
   };
 });
 
-// Ensure virtual fields are serialized
-PicklistSchema.set("toJSON", { virtuals: true });
-PicklistSchema.set("toObject", { virtuals: true });
-
 const Picklist = mongoose.model("Picklist", PicklistSchema);
-
 export default Picklist;

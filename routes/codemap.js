@@ -9,10 +9,18 @@ const requireLogin = (req, res, next) => {
   res.redirect("/auth/login");
 };
 
+const requireAdmin = (req, res, next) => {
+  if (req.isAuthenticated() && req.user.isAdmin) return next();
+  res.status(403).render("pages/error", {
+    title: "Access Denied",
+    message: "Code Maps are managed by admins only.",
+  });
+};
+
 /* ═══════════════════════════════════════════
    LIST — GET /codemap
 ═══════════════════════════════════════════ */
-router.get("/", requireLogin, async (req, res) => {
+router.get("/", requireAdmin, async (req, res) => {
   try {
     const q = (req.query.q || "").trim();
     const page  = Math.max(1, parseInt(req.query.page) || 1);
@@ -52,7 +60,7 @@ router.get("/", requireLogin, async (req, res) => {
 /* ═══════════════════════════════════════════
    ADD — POST /codemap/add
 ═══════════════════════════════════════════ */
-router.post("/add", requireLogin, async (req, res) => {
+router.post("/add", requireAdmin, async (req, res) => {
   try {
     const scannedCode = (req.body.scannedCode || "").trim().toUpperCase();
     const realCode    = (req.body.realCode    || "").trim().toUpperCase();
@@ -78,7 +86,7 @@ router.post("/add", requireLogin, async (req, res) => {
 /* ═══════════════════════════════════════════
    DELETE — POST /codemap/delete/:id
 ═══════════════════════════════════════════ */
-router.post("/delete/:id", requireLogin, async (req, res) => {
+router.post("/delete/:id", requireAdmin, async (req, res) => {
   try {
     await CodeMap.findByIdAndDelete(req.params.id);
     res.redirect("/codemap?success=Mapping+deleted");
@@ -92,7 +100,7 @@ router.post("/delete/:id", requireLogin, async (req, res) => {
    API — GET /codemap/resolve?code=KIT020666
    Used by frontend if needed
 ═══════════════════════════════════════════ */
-router.get("/resolve", requireLogin, async (req, res) => {
+router.get("/resolve", requireAdmin, async (req, res) => {
   const code = (req.query.code || "").trim();
   if (!code) return res.json({ code });
   const resolved = await CodeMap.resolve(code);

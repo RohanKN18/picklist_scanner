@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
-import passportLocalMongoose from "passport-local-mongoose";
+import pkg from "passport-local-mongoose";
+
+const passportLocalMongoose = pkg.default || pkg;
 
 const UserSchema = new mongoose.Schema(
   {
@@ -12,14 +14,16 @@ const UserSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    // Saved column mapping — persists across uploads for this user
+    isAdmin: {
+      type: Boolean,
+      default: false,
+    },
+    // Column mapping — set by admin for each user
     columnMap: {
-      barcode:      { type: String, default: null },
-      quantity:     { type: String, default: null },
-      // Extra columns to show in the info bar on the scan page
-      minorColumns: { type: [String], default: [] },
-      // How many minor columns to display (user-configurable)
-      minorCount:   { type: Number, default: 3 },
+      barcode:  { type: String, default: null },
+      quantity: { type: String, default: null },
+      major:    { type: [String], default: [] },
+      minor:    { type: [String], default: [] },
     },
   },
   { timestamps: true }

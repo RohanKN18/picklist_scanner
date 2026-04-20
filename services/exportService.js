@@ -119,17 +119,49 @@ export async function generateReport(picklist) {
     views: [{ state: "frozen", ySplit: 1 }],
   });
 
-  ws1.columns = [
-    { header: "Code",           key: "code",        width: 28 },
-    { header: "Expected Qty",   key: "expected",    width: 14 },
-    { header: "Scanned Qty",    key: "scanned",     width: 14 },
-    { header: "Boxes Scanned",  key: "boxes",       width: 15 },
-    { header: "Remaining Qty",  key: "remaining",   width: 14 },
-    { header: "Status",         key: "status",      width: 12 },
-    { header: "Original Scans", key: "originals",   width: 55 },
+  // Pull major/minor config and first-row data
+  const majorCols   = (picklist.columnConfig && picklist.columnConfig.major) || [];
+  const minorCols   = (picklist.columnConfig && picklist.columnConfig.minor) || [];
+  const firstRowMap = picklist.firstRowData || {};
+
+  // Build dynamic columns — core first, then major, then minor
+  const coreColumns = [
+    { header: "Code",           key: "code",       width: 28 },
+    { header: "Expected Qty",   key: "expected",   width: 14 },
+    { header: "Scanned Qty",    key: "scanned",    width: 14 },
+    { header: "Boxes Scanned",  key: "boxes",      width: 15 },
+    { header: "Remaining Qty",  key: "remaining",  width: 14 },
+    { header: "Status",         key: "status",     width: 12 },
+    { header: "Original Scans", key: "originals",  width: 55 },
   ];
 
-  styleHeader(ws1.getRow(1), HDR_BLACK);
+  const majorColumns = majorCols.map((col) => ({
+    header: col, key: `major__${col}`, width: Math.max(16, col.length + 4),
+  }));
+
+  const minorColumns = minorCols.map((col) => ({
+    header: col, key: `minor__${col}`, width: Math.max(16, col.length + 4),
+  }));
+
+  ws1.columns = [...coreColumns, ...majorColumns, ...minorColumns];
+
+  // Style header — core cols black, major cols blue, minor cols amber
+  const headerRow = ws1.getRow(1);
+  styleHeader(headerRow, HDR_BLACK);
+
+  // Re-colour major + minor header cells
+  const coreCount  = coreColumns.length;
+  const majorStart = coreCount + 1;
+  const minorStart = majorStart + majorCols.length;
+
+  majorCols.forEach((_, i) => {
+    const cell = headerRow.getCell(majorStart + i);
+    cell.fill = HDR_BLUE;
+  });
+  minorCols.forEach((_, i) => {
+    const cell = headerRow.getCell(minorStart + i);
+    cell.fill = HDR_AMBER;
+  });
 
   for (const item of picklist.items) {
     const remaining = Math.max(0, item.expectedQty - item.scannedQty);
@@ -140,7 +172,7 @@ export async function generateReport(picklist) {
 
     const STATUS_LABELS = { pending: "PENDING", partial: "PARTIAL", done: "DONE", over: "OVER" };
 
-    const row = ws1.addRow({
+    const rowData = {
       code,
       expected:  item.expectedQty,
       scanned:   item.scannedQty,
@@ -148,9 +180,15 @@ export async function generateReport(picklist) {
       remaining,
       status:    STATUS_LABELS[status] || status.toUpperCase(),
       originals,
-    });
+    };
 
+    // Add major + minor values (same first-row value for every row)
+    majorCols.forEach((col) => { rowData[`major__${col}`] = firstRowMap[col] || ""; });
+    minorCols.forEach((col) => { rowData[`minor__${col}`] = firstRowMap[col] || ""; });
+
+    const row  = ws1.addRow(rowData);
     const fill = FILL[status] || FILL.pending;
+
     row.eachCell((cell) => {
       cell.fill      = fill;
       cell.alignment = { vertical: "top", horizontal: "center", wrapText: true };
@@ -160,7 +198,6 @@ export async function generateReport(picklist) {
     row.getCell("code").alignment      = { vertical: "top", horizontal: "left" };
     row.getCell("originals").alignment = { vertical: "top", horizontal: "left", wrapText: true };
 
-    // Auto-height: rough estimate — 15pt per line
     const lineCount = (originals.match(/\n/g) || []).length + 1;
     row.height = Math.max(22, lineCount * 15);
   }
@@ -240,7 +277,7 @@ export async function generateReport(picklist) {
   /* ══════════════════════════════════════
      SHEET 3 — EXTRA SCANS
   ══════════════════════════════════════ */
-  if (picklist.extraScans && Object.keys(picklist.extraScans).length > 0) {
+  if (picklist.extraScans && picklist.extraScans.size > 0) {
     const ws3 = wb.addWorksheet("Extra Scans");
     ws3.columns = [
       { header: "Code",          key: "code",     width: 28 },
@@ -251,7 +288,7 @@ export async function generateReport(picklist) {
 
     styleHeader(ws3.getRow(1), HDR_RED);
 
-    for (const [code, qty] of Object.entries(picklist.extraScans)) {
+    for (const [code, qty] of picklist.extraScans) {
       const boxes     = boxCount[code] || 0;
       const originals = (rawScansMap[code] || []).join("\n");
 
@@ -283,6 +320,12 @@ export async function generateReport(picklist) {
     ["File Name",          picklist.fileName || "Unknown",  false],
     ["Report Generated",   fmt(new Date()),                 false],
     ["Picklist ID",        picklist._id.toString(),         false],
+
+    ["COLUMN CONFIGURATION", null, true],
+    ["Major Columns",      majorCols.length ? majorCols.join(", ") : "— none configured —", false],
+    ...majorCols.map((col) => [`  ${col}`, firstRowMap[col] || "—", false]),
+    ["Minor Columns",      minorCols.length ? minorCols.join(", ") : "— none configured —", false],
+    ...minorCols.map((col) => [`  ${col}`, firstRowMap[col] || "—", false]),
 
     ["SCAN PERFORMANCE", null, true],
     ["First Scan Time",    fmt(firstScan),                  false],

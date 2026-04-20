@@ -1,0 +1,211 @@
+<div class="page-wrapper" style="max-width:760px;">
+  <div class="page-header">
+    <a href="/admin" class="back-link">← Back to Users</a>
+    <div class="page-header__title">Configure Columns</div>
+    <div class="page-header__sub">
+      Setting up column mapping for <strong><%= target.displayName || target.username %></strong>.
+      These settings are saved permanently and apply to all future uploads by this user.
+    </div>
+  </div>
+
+  <% if (saved) { %>
+    <div class="alert alert--success" style="margin-bottom:20px;">
+      <span class="alert__icon" style="background:var(--green);">✓</span>
+      <span>Column mapping saved successfully for <strong><%= target.displayName || target.username %></strong>.</span>
+    </div>
+  <% } %>
+
+  <% if (error) { %>
+    <div class="alert alert--error" style="margin-bottom:20px;">
+      <span class="alert__icon">!</span>
+      <span><%= error %></span>
+    </div>
+  <% } %>
+
+  <div class="colmap-card">
+    <form action="/admin/users/<%= target._id %>/colmap" method="POST" id="colmap-form">
+
+      <% const cm = target.columnMap || {}; %>
+
+      <!-- ── HOW TO USE ── -->
+      <div class="colmap-info-box">
+        <div class="colmap-info-title">How it works</div>
+        <div class="colmap-info-text">
+          Enter the exact column names from the user's Excel file. These names are case-sensitive.
+          You can paste a column name from the file preview below after the user uploads a file.
+        </div>
+      </div>
+
+      <!-- ── SCAN COLUMNS ── -->
+      <div class="colmap-section">
+        <div class="colmap-section-label">
+          <span class="colmap-section-num">1</span>
+          Scan Columns
+          <span class="colmap-section-hint">The two columns that drive scanning logic</span>
+        </div>
+        <div class="colmap-grid">
+          <div class="field-group">
+            <label class="field-label" for="barcode">
+              Code / Barcode Column
+              <% if (cm.barcode) { %><span class="saved-tag">saved</span><% } %>
+            </label>
+            <div class="field-hint">Column containing item codes or barcodes</div>
+            <input
+              type="text"
+              name="barcode"
+              id="barcode"
+              class="field-input"
+              value="<%= cm.barcode || '' %>"
+              placeholder="e.g. Item Code"
+              required
+            />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="quantity">
+              Quantity Column
+              <% if (cm.quantity) { %><span class="saved-tag">saved</span><% } %>
+            </label>
+            <div class="field-hint">Column containing expected quantities</div>
+            <input
+              type="text"
+              name="quantity"
+              id="quantity"
+              class="field-input"
+              value="<%= cm.quantity || '' %>"
+              placeholder="e.g. Qty"
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MAJOR COLUMNS ── -->
+      <div class="colmap-section">
+        <div class="colmap-section-label">
+          <span class="colmap-section-num colmap-section-num--major">2</span>
+          Major Columns
+          <span class="colmap-section-hint">Up to 2 — shown highlighted in the dashboard file bar and export</span>
+        </div>
+        <div class="colmap-grid">
+          <div class="field-group">
+            <label class="field-label" for="major0">
+              Major Column 1
+              <% if (cm.major && cm.major[0]) { %><span class="saved-tag">saved</span><% } %>
+            </label>
+            <input
+              type="text"
+              name="major"
+              id="major0"
+              class="field-input field-input--major"
+              value="<%= (cm.major && cm.major[0]) || '' %>"
+              placeholder="e.g. Product Name"
+            />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="major1">
+              Major Column 2
+              <% if (cm.major && cm.major[1]) { %><span class="saved-tag">saved</span><% } %>
+            </label>
+            <input
+              type="text"
+              name="major"
+              id="major1"
+              class="field-input field-input--major"
+              value="<%= (cm.major && cm.major[1]) || '' %>"
+              placeholder="e.g. Category"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MINOR COLUMNS ── -->
+      <div class="colmap-section">
+        <div class="colmap-section-label">
+          <span class="colmap-section-num">3</span>
+          Minor Columns
+          <span class="colmap-section-hint">Shown as plain chips in the dashboard file bar and export</span>
+        </div>
+
+        <div class="minor-count-row">
+          <label class="field-label" for="minor-count">How many minor columns?</label>
+          <div class="minor-count-controls">
+            <input
+              type="number"
+              id="minor-count"
+              class="field-input minor-count-input"
+              min="0"
+              max="10"
+              value="<%= cm.minor ? cm.minor.length : 0 %>"
+              placeholder="0"
+            />
+            <button type="button" class="btn btn--outline btn--sm" id="apply-count-btn">Apply</button>
+          </div>
+        </div>
+
+        <div id="minor-fields" class="colmap-grid">
+          <% if (cm.minor && cm.minor.length) { %>
+            <% cm.minor.forEach((col, idx) => { %>
+              <div class="field-group">
+                <label class="field-label" for="minor<%= idx %>">Minor Column <%= idx + 1 %></label>
+                <input
+                  type="text"
+                  name="minor"
+                  id="minor<%= idx %>"
+                  class="field-input"
+                  value="<%= col %>"
+                  placeholder="e.g. Warehouse"
+                />
+              </div>
+            <% }) %>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Save Column Mapping →</button>
+        <a href="/admin" class="btn btn--outline">← Cancel</a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+  const savedMinor = <%- JSON.stringify((target.columnMap && target.columnMap.minor) || []) %>;
+
+  function buildMinorFields(count, existingValues) {
+    const container = document.getElementById("minor-fields");
+    container.innerHTML = "";
+    for (let i = 0; i < count; i++) {
+      const val = existingValues[i] || "";
+      container.innerHTML += `
+        <div class="field-group">
+          <label class="field-label" for="minor${i}">Minor Column ${i + 1}</label>
+          <input
+            type="text"
+            name="minor"
+            id="minor${i}"
+            class="field-input"
+            value="${val}"
+            placeholder="e.g. Column name"
+          />
+        </div>
+      `;
+    }
+  }
+
+  document.getElementById("apply-count-btn").addEventListener("click", () => {
+    const count = Math.max(0, Math.min(10, parseInt(document.getElementById("minor-count").value) || 0));
+    // collect current values before rebuilding
+    const currentVals = Array.from(document.querySelectorAll("#minor-fields input")).map(i => i.value);
+    buildMinorFields(count, currentVals);
+  });
+
+  // Also trigger on Enter in the count input
+  document.getElementById("minor-count").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      document.getElementById("apply-count-btn").click();
+    }
+  });
+</script>

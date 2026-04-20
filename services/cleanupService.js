@@ -1,4 +1,4 @@
-import Picklist from "../models/picklist.js";
+import Picklist from "../models/Picklist.js";
 import ScanLog from "../models/ScanLog.js";
 
 const DEFAULT_RETENTION_DAYS = parseInt(process.env.PICKLIST_RETENTION_DAYS) || 30;

@@ -10,11 +10,11 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 
 import User from "./models/User.js";
-import Picklist from "./models/picklist.js";
 import picklistRouter from "./routes/picklist.js";
 import authRouter from "./routes/auth.js";
 import codemapRouter from "./routes/codemap.js";
 import historyRouter from "./routes/history.js";
+import adminRouter from "./routes/admin.js";
 import { startCleanupScheduler } from "./services/cleanupService.js";
 
 dotenv.config();
@@ -77,6 +77,7 @@ export const requireLogin = (req, res, next) => {
 
 /* ─── ROUTES ─── */
 app.use("/auth",    authRouter);
+app.use("/admin",   adminRouter);
 app.use("/codemap", codemapRouter);
 app.use("/history", historyRouter);
 app.use("/",        picklistRouter);

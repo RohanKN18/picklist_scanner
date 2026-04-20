@@ -1,0 +1,93 @@
+<div class="page-wrapper" style="max-width:900px;">
+  <div class="page-header">
+    <div class="page-header__title">Admin — Users</div>
+    <div class="page-header__sub">Manage users and configure column mappings for each account.</div>
+  </div>
+
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Scan Cols</th>
+          <th>Major</th>
+          <th>Minor</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% users.forEach(u => { %>
+          <% const cm = u.columnMap || {}; %>
+          <tr>
+            <td>
+              <div class="admin-user-cell">
+                <div class="admin-avatar"><%= (u.displayName || u.username).charAt(0).toUpperCase() %></div>
+                <span><%= u.displayName || u.username %></span>
+              </div>
+            </td>
+            <td class="mono-cell"><%= u.username %></td>
+            <td>
+              <span class="role-badge <%= u.isAdmin ? 'role-badge--admin' : 'role-badge--user' %>">
+                <%= u.isAdmin ? 'Admin' : 'User' %>
+              </span>
+            </td>
+            <td>
+              <% if (cm.barcode && cm.quantity) { %>
+                <span class="col-tag col-tag--scan"><%= cm.barcode %></span>
+                <span class="col-tag col-tag--scan"><%= cm.quantity %></span>
+              <% } else { %>
+                <span class="not-set">— not set —</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (cm.major && cm.major.length) { %>
+                <% cm.major.forEach(c => { %><span class="col-tag col-tag--major"><%= c %></span><% }) %>
+              <% } else { %>
+                <span class="not-set">—</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (cm.minor && cm.minor.length) { %>
+                <% cm.minor.forEach(c => { %><span class="col-tag col-tag--minor"><%= c %></span><% }) %>
+              <% } else { %>
+                <span class="not-set">—</span>
+              <% } %>
+            </td>
+            <td>
+              <div class="admin-actions">
+                <a href="/admin/users/<%= u._id %>/colmap" class="btn btn--sm btn--outline">
+                  Configure Columns
+                </a>
+                <% if (u._id.toString() !== currentUser._id.toString()) { %>
+                  <button
+                    class="btn btn--sm <%= u.isAdmin ? 'btn--danger' : 'btn--outline' %> toggle-admin-btn"
+                    data-id="<%= u._id %>"
+                    data-is-admin="<%= u.isAdmin %>">
+                    <%= u.isAdmin ? 'Revoke Admin' : 'Make Admin' %>
+                  </button>
+                <% } %>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll(".toggle-admin-btn").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const id = btn.dataset.id;
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+    try {
+      const res = await fetch(`/admin/users/${id}/toggle-admin`, { method: "POST" });
+      if (res.ok) window.location.reload();
+      else btn.textContent = "Error";
+    } catch { btn.textContent = "Error"; }
+  });
+});
+</script>
