@@ -26,7 +26,12 @@ const app = express();
 
 /* ─── DB ─── */
 mongoose
-  .connect(process.env.MONGO_URI || "mongodb://localhost:27017/picklist_db")
+  .connect(process.env.MONGO_URI || "mongodb://localhost:27017/picklist_db", {
+    tls: true,
+    tlsAllowInvalidCertificates: false,
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+  })
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB error:", err));
 
