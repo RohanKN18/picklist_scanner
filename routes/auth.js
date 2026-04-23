@@ -33,18 +33,10 @@ router.post("/register", async (req, res) => {
   }
 
   try {
-    const existing = await User.findOne({ username });
-    if (existing) {
-      return res.render("pages/register", {
-        title: "Create Account",
-        error: "That username is already taken.",
-      });
-    }
-
     const user = new User({ username, displayName: displayName || username });
-    await User.register(user, password);
+    const registeredUser = await User.register(user, password);
 
-    req.login(user, (err) => {
+    req.login(registeredUser, (err) => {
       if (err) {
         return res.render("pages/register", {
           title: "Create Account",
