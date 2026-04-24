@@ -4,7 +4,7 @@ import CodeMap from "./models/CodeMap.js";
 
 dotenv.config();
 
-const codeMaps =  [
+const raw = [
   ["BLJGD55BK00001","BLJGD55BK00001"],["KIT027311","BCNXT24BKOR005"],["KIT020626","BCSUK50BKRD001"],
   ["KIT029024","BCESH26PK00001"],["KIT027286","BCALP24BLGN002"],["BLJSG55BK00007","BLJSG55BK00007"],
   ["BLJSG55BK00034","BLJSG55BK00034"],["KIT027313","BCNXT26BKOR005"],["BCBMR20BLOR005","BCBMR20BLOR005"],
@@ -207,6 +207,20 @@ const codeMaps =  [
   ["kit010152","BCWHI14BKPK001"],["BSNXT26BK00005","BSNXT26BK00005"],["BCNXT26BKOR005","BCNXT26BKOR005"],
 ];
 
+// Convert array of arrays → array of objects
+const codeMaps = raw.map(([scannedCode, realCode]) => ({
+  scannedCode: scannedCode.trim(),
+  realCode: realCode.trim(),
+}));
+
+// Remove duplicates by scannedCode (keep last occurrence)
+const deduped = Object.values(
+  codeMaps.reduce((acc, item) => {
+    acc[item.scannedCode.toUpperCase()] = item;
+    return acc;
+  }, {})
+);
+
 async function seed() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
@@ -215,8 +229,8 @@ async function seed() {
     await CodeMap.deleteMany({});
     console.log("🗑️  Cleared existing codemaps");
 
-    await CodeMap.insertMany(codeMaps);
-    console.log(`✅ Inserted ${codeMaps.length} code maps`);
+    await CodeMap.insertMany(deduped);
+    console.log(`✅ Inserted ${deduped.length} code maps`);
 
   } catch (err) {
     console.error("❌ Seed failed:", err);
