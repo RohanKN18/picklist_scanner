@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: picklist-scanner
+    runtime: node
+    buildCommand: npm install && pip3 install -r python/requirements.txt
+    startCommand: node app.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: PICKLIST_RETENTION_DAYS
+        value: 30

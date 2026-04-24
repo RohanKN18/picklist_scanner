@@ -6,6 +6,7 @@ import expressLayouts from "express-ejs-layouts";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 
@@ -21,6 +22,12 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/* ─── ENSURE TEMP DIRS EXIST (important on Render ephemeral disk) ─── */
+["uploads", "exports"].forEach((dir) => {
+  const dirPath = path.join(__dirname, dir);
+  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
+});
 
 const app = express();
 

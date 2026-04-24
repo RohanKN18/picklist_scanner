@@ -3,12 +3,15 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname  = path.dirname(__filename);
 
 const PARSER_SCRIPT = path.join(__dirname, "..", "python", "parser.py");
 
+// Use 'python3' on Linux/Render, fall back to 'python' on Windows
+const PYTHON_BIN = process.platform === "win32" ? "python" : "python3";
+
 /**
- * Parse an Excel file using the Python microservice.
+ * Parse an Excel file using the Python parser.
  * Returns { columns: string[], rows: Record<string, any>[] }
  */
 export function parseExcel(file) {
@@ -18,35 +21,27 @@ export function parseExcel(file) {
     }
 
     console.log("Spawning Python with file:", file.path);
-    const python = spawn("C:\\Python312\\python.exe", [PARSER_SCRIPT, file.path]);
+    const python = spawn(PYTHON_BIN, [PARSER_SCRIPT, file.path]);
 
     let stdout = "";
     let stderr = "";
 
-    python.stdout.on("data", (data) => {
-      stdout += data.toString();
-    });
-
+    python.stdout.on("data", (data) => { stdout += data.toString(); });
     python.stderr.on("data", (data) => {
       stderr += data.toString();
+      console.error("stderr:", data.toString());
     });
 
     python.on("close", (code) => {
       console.log("Python process exited with code:", code);
-      console.log("stdout:", stdout);
-      console.log("stderr:", stderr);
       if (code !== 0) {
-        console.error("Python stderr:", stderr);
         return reject(new Error(`Parser exited with code ${code}: ${stderr}`));
       }
-
       try {
         const result = JSON.parse(stdout);
-
         if (!result.columns || !result.rows) {
           return reject(new Error("Invalid parser output: missing columns or rows"));
         }
-
         resolve(result);
       } catch (e) {
         reject(new Error(`Failed to parse Python output: ${e.message}`));
